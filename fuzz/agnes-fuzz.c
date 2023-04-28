@@ -16,11 +16,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv) {
 }
 
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {    
-    if (Size > 0 && agnes_load_ines_data(agnes, Data, Size - 1)) {
-        uint8_t times = Data[Size - 1];
-        while(times > 0) {
-            agnes_next_frame(agnes);
-            times--;
-        }
+    if (Size > 0 && agnes_load_ines_data(agnes, Data, Size)) {
+        agnes_next_frame(agnes);
     }
 }
