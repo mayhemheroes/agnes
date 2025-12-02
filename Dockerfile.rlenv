@@ -1,0 +1,116 @@
+# ============================================================================
+# RLENV Patch Playground - Single-Stage Build
+# ============================================================================
+# Original image: ghcr.io/mayhemheroes/agnes:master
+# Git revision: 93904e5cd767f1d5e93393cdd9947e31bb1688fe
+# Target: ./agnes-fuzz (libFuzzer-instrumented)
+
+# ============================================================================
+# 1. Base Image Selection
+# ============================================================================
+FROM debian:bookworm
+
+# ============================================================================
+# 2. System Dependencies (merge ALL stages from original Dockerfile)
+# ============================================================================
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    clang \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# REQUIRED: jq is used by validate.sh to parse metadata.json
+
+# ============================================================================
+# 3. Copy MTV Binary (REQUIRED - used by validate.sh)
+# ============================================================================
+COPY --from="us-east4-docker.pkg.dev/forallsecure-1/rlenv-staging/rlenv-mcp-static:latest" \
+     /rlenv/bin/mtv /rlenv/bin/mtv
+
+# MTV (Mayhem Test & Verify) is required for validation and crash triage
+
+# ============================================================================
+# 4. Language-Specific Setup
+# ============================================================================
+ENV FUZZING_LANGUAGE=c
+ENV CC=clang
+ENV CFLAGS="-g -fsanitize=fuzzer"
+
+# ============================================================================
+# 5. Copy Source Code (EARLY - source exists now)
+# ============================================================================
+COPY . /rlenv/source/agnes/
+
+# This copies the entire repository to /rlenv/source/agnes/
+
+# ============================================================================
+# 6. Make Source World-Writable (REQUIRED for non-root rebuilds)
+# ============================================================================
+RUN chmod -R 777 /rlenv/source
+
+# Why 777? Validation runs as UID 1000 (unprivileged user)
+# Must be able to modify source code and rebuild
+
+# ============================================================================
+# 7. Set Working Directory
+# ============================================================================
+WORKDIR /rlenv/source/agnes/fuzz
+
+# All subsequent RUN commands execute from this directory
+
+# ============================================================================
+# 8. Build Application
+# ============================================================================
+RUN make
+
+# This compiles agnes-fuzz.c with libFuzzer instrumentation
+# Command: clang -g -fsanitize=fuzzer -o agnes-fuzz agnes-fuzz.c ../agnes.c
+
+# ============================================================================
+# 9. Verify Build Artifact
+# ============================================================================
+RUN test -f agnes-fuzz || (echo "Error: agnes-fuzz not built" && exit 1)
+
+# ============================================================================
+# 10. Copy Artifact to Expected Location
+# ============================================================================
+# The target executable is already in the correct location (./agnes-fuzz)
+# No additional copying needed
+
+# ============================================================================
+# 11. Permission Management (REQUIRED)
+# ============================================================================
+# Target executable (rwxrw-rw-)
+RUN chmod 766 agnes-fuzz
+
+# Make working directory writable
+RUN chmod -R 777 /rlenv/source/agnes/fuzz
+
+# ============================================================================
+# 12. Copy rlenv Directory (MUST BE NEAR END - doesn't exist yet!)
+# ============================================================================
+COPY rlenv /rlenv
+
+# CRITICAL: This directory doesn't exist when you create this Dockerfile
+# It's populated later by the `rlenv patch` command
+# That's why it must come AFTER source copy and build
+
+# ============================================================================
+# 13. Final Permission Fix (REQUIRED)
+# ============================================================================
+RUN chmod -R 777 /rlenv/source
+
+# Ensures source remains writable after rlenv directory copy
+
+# ============================================================================
+# 14. Set Entry Point
+# ============================================================================
+WORKDIR /rlenv/source/agnes/fuzz
+CMD ["./agnes-fuzz"]
+
+# Use the same path as in metadata.json
+
+# ============================================================================
+# 15. Reset Working Directory
+# ============================================================================
+WORKDIR /

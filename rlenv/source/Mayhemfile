@@ -1,0 +1,11 @@
+project: mayhemheroes/agnes
+target: agnes-fuzz
+
+cmds:
+  - cmd: ./agnes-fuzz
+    libfuzzer: true
+    env: {}
+image: ghcr.io/mayhemheroes/agnes@sha256:62861d354950ce0ad66f76debcf879c7119ca0a43e2daa577aea8e512107a7a1
+duration: 300
+testsuite:
+  - https://app.mayhem.security/mayhemheroes/agnes/agnes-fuzz/testsuite.tar
