@@ -8,6 +8,6 @@
   "run_image_with_digest": "ghcr.io/mayhemheroes/agnes@sha256:62861d354950ce0ad66f76debcf879c7119ca0a43e2daa577aea8e512107a7a1",
   "git_repo_url": "git@github.com:mayhemheroes/agnes.git",
   "git_revision": "93904e5cd767f1d5e93393cdd9947e31bb1688fe",
-  "target_executable": "./agnes-fuzz",
-  "working_dir": ""
+  "target_executable": "/rlenv/source/agnes/fuzz/agnes-fuzz",
+  "working_dir": "/rlenv/source/agnes/fuzz"
 }

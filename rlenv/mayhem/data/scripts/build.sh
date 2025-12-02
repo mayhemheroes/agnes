@@ -6,7 +6,7 @@ set -euo pipefail
 #
 # Original image: ghcr.io/mayhemheroes/agnes:master
 # Git revision: 93904e5cd767f1d5e93393cdd9947e31bb1688fe
-# Target: ./agnes-fuzz (libFuzzer-instrumented C binary)
+# Target: /rlenv/source/agnes/fuzz/agnes-fuzz (libFuzzer-instrumented C binary)
 
 # ============================================================================
 # Environment Variables
@@ -44,20 +44,22 @@ chmod 777 agnes-fuzz 2>/dev/null || true
 # ============================================================================
 # REQUIRED: Verify Build Succeeded
 # ============================================================================
-if [ ! -f agnes-fuzz ]; then
-    echo "Error: Build artifact not found at agnes-fuzz"
+TARGET_PATH="/rlenv/source/agnes/fuzz/agnes-fuzz"
+
+if [ ! -f "$TARGET_PATH" ]; then
+    echo "Error: Build artifact not found at $TARGET_PATH"
     exit 1
 fi
 
 # Verify executable bit
-if [ ! -x agnes-fuzz ]; then
+if [ ! -x "$TARGET_PATH" ]; then
     echo "Warning: Build artifact is not executable"
 fi
 
 # Verify file size (fuzzer should be reasonably sized)
-SIZE=$(stat -c%s agnes-fuzz 2>/dev/null || stat -f%z agnes-fuzz 2>/dev/null || echo 0)
+SIZE=$(stat -c%s "$TARGET_PATH" 2>/dev/null || stat -f%z "$TARGET_PATH" 2>/dev/null || echo 0)
 if [ "$SIZE" -lt 1000 ]; then
     echo "Warning: Build artifact is suspiciously small ($SIZE bytes)"
 fi
 
-echo "Build completed successfully: agnes-fuzz ($SIZE bytes)"
+echo "Build completed successfully: $TARGET_PATH ($SIZE bytes)"
