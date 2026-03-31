@@ -1,0 +1,6 @@
+project: agnes
+target: agnes-fuzz
+
+cmds:
+    - cmd: ./agnes-fuzz
+      libfuzzer: true
